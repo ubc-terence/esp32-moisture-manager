@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plant Monitor</title>
+<style>
+  body { font-family: sans-serif; background: #f4f7f4; margin: 0; padding: 1rem; color: #223; }
+  h1 { font-size: 1.3rem; margin: 0 0 1rem; }
+  .card { background: white; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .reading { font-size: 2.5rem; font-weight: bold; color: #2e7d32; }
+  .reading.low { color: #c62828; }
+  canvas { width: 100%; height: 220px; display: block; }
+  button { padding: 0.5rem 1rem; margin-right: 0.5rem; border: none; border-radius: 4px; background: #2e7d32; color: white; font-size: 1rem; }
+  .hint { color: #667; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+  <h1>Plant Monitor</h1>
+
+  <div class="card">
+    <div id="reading" class="reading">--%</div>
+    <div class="hint">raw ADC: <span id="raw">--</span></div>
+  </div>
+
+  <div class="card">
+    <canvas id="chart" width="600" height="220"></canvas>
+  </div>
+
+  <div class="card">
+    <p class="hint">Calibrate: hold the sensor in dry air, click "Set Dry". Dip it fully in water, click "Set Wet".</p>
+    <button id="setDry">Set Dry</button>
+    <button id="setWet">Set Wet</button>
+    <p class="hint" id="calStatus"></p>
+  </div>
+
+<script>
+async function fetchNow() {
+  const res = await fetch('/api/now');
+  const data = await res.json();
+  const readingEl = document.getElementById('reading');
+  readingEl.textContent = data.moisture_pct.toFixed(0) + '%';
+  readingEl.classList.toggle('low', data.moisture_pct < 25);
+  document.getElementById('raw').textContent = data.raw;
+}
+
+function formatAge(seconds) {
+  if (seconds < 60) return seconds + 's ago';
+  if (seconds < 3600) return Math.round(seconds / 60) + 'm ago';
+  if (seconds < 86400) return Math.round(seconds / 3600) + 'h ago';
+  return Math.round(seconds / 86400) + 'd ago';
+}
+
+async function fetchHistory() {
+  const res = await fetch('/api/history');
+  const points = await res.json();
+  drawChart(points);
+}
+
+function drawChart(points) {
+  const canvas = document.getElementById('chart');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  if (points.length === 0) {
+    ctx.fillStyle = '#889';
+    ctx.fillText('No history yet', w / 2 - 40, h / 2);
+    return;
+  }
+
+  const padding = 30;
+  const maxAge = Math.max(...points.map(p => p.age_seconds), 1);
+
+  ctx.strokeStyle = '#2e7d32';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  points.forEach((p, i) => {
+    const x = padding + ((maxAge - p.age_seconds) / maxAge) * (w - 2 * padding);
+    const y = h - padding - (p.moisture_pct / 100) * (h - 2 * padding);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  ctx.fillStyle = '#667';
+  ctx.font = '11px sans-serif';
+  ctx.fillText(formatAge(points[0].age_seconds), padding, h - 8);
+  ctx.fillText(formatAge(points[points.length - 1].age_seconds), w - padding - 40, h - 8);
+}
+
+document.getElementById('setDry').addEventListener('click', async () => {
+  const res = await fetch('/api/now');
+  const now = await res.json();
+  await fetch('/api/calibrate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dry: now.raw })
+  });
+  document.getElementById('calStatus').textContent = 'Dry point set to raw ' + now.raw;
+});
+
+document.getElementById('setWet').addEventListener('click', async () => {
+  const res = await fetch('/api/now');
+  const now = await res.json();
+  await fetch('/api/calibrate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ wet: now.raw })
+  });
+  document.getElementById('calStatus').textContent = 'Wet point set to raw ' + now.raw;
+});
+
+fetchNow();
+fetchHistory();
+setInterval(fetchNow, 10000);
+setInterval(fetchHistory, 300000);
+</script>
+</body>
+</html>
