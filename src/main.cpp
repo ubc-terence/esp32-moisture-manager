@@ -60,8 +60,19 @@ void setup() {
     webCtx.lastRawReading = initialRaw;
     webCtx.lastPercent = calibration.toPercent(initialRaw);
 
+    // Workaround for a known Arduino-ESP32 3.3.8+ regression where
+    // WiFi.softAP() reports success (valid IP/mode/channel) but the AP is
+    // never actually visible to clients: fully clear any stored STA config
+    // and force WiFi off before switching to AP mode, rather than going
+    // straight from the power-on default state to WIFI_AP.
+    WiFi.disconnect(true, true);
+    delay(100);
+    WiFi.mode(WIFI_OFF);
+    delay(200);
+
     WiFi.mode(WIFI_AP);
     WiFi.softAP(AP_SSID, AP_PASSWORD);
+    WiFi.setSleep(false); // disable WiFi power-save, in case it's suppressing beacons
     WiFi.setTxPower(WIFI_POWER_19_5dBm); // max, for consistency with the C3 build
     Serial.print("AP IP address: ");
     Serial.println(WiFi.softAPIP());
