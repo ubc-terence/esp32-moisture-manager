@@ -12,6 +12,8 @@
   .reading.low { color: #c62828; }
   canvas { width: 100%; height: 220px; display: block; }
   button { padding: 0.5rem 1rem; margin-right: 0.5rem; border: none; border-radius: 4px; background: #2e7d32; color: white; font-size: 1rem; }
+  button:disabled { background: #aab; cursor: not-allowed; }
+  .stability-warning { color: #b26a00; }
   .hint { color: #667; font-size: 0.85rem; }
 </style>
 </head>
@@ -21,6 +23,7 @@
   <div class="card">
     <div id="reading" class="reading">--%</div>
     <div class="hint">raw ADC: <span id="raw">--</span></div>
+    <div class="hint" id="stabilityHint"></div>
   </div>
 
   <div class="card">
@@ -42,6 +45,21 @@ async function fetchNow() {
   readingEl.textContent = data.moisture_pct.toFixed(0) + '%';
   readingEl.classList.toggle('low', data.moisture_pct < 25);
   document.getElementById('raw').textContent = data.raw;
+
+  const stabilityHint = document.getElementById('stabilityHint');
+  const setDryBtn = document.getElementById('setDry');
+  const setWetBtn = document.getElementById('setWet');
+  if (data.stable) {
+    stabilityHint.textContent = '';
+    stabilityHint.classList.remove('stability-warning');
+    setDryBtn.disabled = false;
+    setWetBtn.disabled = false;
+  } else {
+    stabilityHint.textContent = 'Reading is still settling (takes about a minute after power-on) — calibration is disabled until it stabilizes.';
+    stabilityHint.classList.add('stability-warning');
+    setDryBtn.disabled = true;
+    setWetBtn.disabled = true;
+  }
 }
 
 function formatAge(seconds) {
@@ -88,27 +106,24 @@ function drawChart(points) {
   ctx.fillText(formatAge(points[points.length - 1].age_seconds), w - padding - 40, h - 8);
 }
 
-document.getElementById('setDry').addEventListener('click', async () => {
-  const res = await fetch('/api/now');
-  const now = await res.json();
-  await fetch('/api/calibrate', {
+async function calibrate(point) {
+  const nowRes = await fetch('/api/now');
+  const now = await nowRes.json();
+  const calRes = await fetch('/api/calibrate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ dry: now.raw })
+    body: JSON.stringify({ [point]: now.raw })
   });
-  document.getElementById('calStatus').textContent = 'Dry point set to raw ' + now.raw;
-});
+  const calStatus = document.getElementById('calStatus');
+  if (calRes.ok) {
+    calStatus.textContent = (point === 'dry' ? 'Dry' : 'Wet') + ' point set to raw ' + now.raw;
+  } else {
+    calStatus.textContent = 'Calibration rejected — reading is not stable yet, wait a moment and try again.';
+  }
+}
 
-document.getElementById('setWet').addEventListener('click', async () => {
-  const res = await fetch('/api/now');
-  const now = await res.json();
-  await fetch('/api/calibrate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ wet: now.raw })
-  });
-  document.getElementById('calStatus').textContent = 'Wet point set to raw ' + now.raw;
-});
+document.getElementById('setDry').addEventListener('click', () => calibrate('dry'));
+document.getElementById('setWet').addEventListener('click', () => calibrate('wet'));
 
 fetchNow();
 fetchHistory();

@@ -8,6 +8,7 @@
 #include "CalibrationStore.h"
 #include "HistoryBuffer.h"
 #include "HistoryStore.h"
+#include "ReadingStability.h"
 #include "SensorReader.h"
 #include "WebServer.h"
 
@@ -26,6 +27,12 @@ constexpr const char *AP_PASSWORD = "plant1234"; // WPA2, >= 8 chars required by
 
 Calibration calibration;
 HistoryBuffer history(HISTORY_CAPACITY);
+// Readings are considered "stable" once the last 3 raw values are all
+// within 15 raw ADC counts of each other — this sensor's output drifts
+// noticeably for roughly a minute after a fresh power-on/reset before
+// settling, so a single reading right after boot can't be trusted for
+// calibration or an accurate display value.
+ReadingStability readingStability(3, 15);
 AsyncWebServer server(80);
 WebServer::Context webCtx;
 
@@ -59,6 +66,8 @@ void setup() {
     int initialRaw = SensorReader::readRawAveraged(AOUT_PIN, VCC_PIN);
     webCtx.lastRawReading = initialRaw;
     webCtx.lastPercent = calibration.toPercent(initialRaw);
+    readingStability.addReading(initialRaw);
+    webCtx.stable = readingStability.isStable();
 
     // Workaround for a known Arduino-ESP32 3.3.8+ regression where
     // WiFi.softAP() reports success (valid IP/mode/channel) but the AP is
@@ -92,13 +101,15 @@ void loop() {
     if (now - lastReadMs >= READ_INTERVAL_MS) {
         lastReadMs = now;
         int raw = SensorReader::readRawAveraged(AOUT_PIN, VCC_PIN);
+        readingStability.addReading(raw);
 
         xSemaphoreTake(stateMutex, portMAX_DELAY);
         webCtx.lastRawReading = raw;
         webCtx.lastPercent = calibration.toPercent(raw);
+        webCtx.stable = readingStability.isStable();
         xSemaphoreGive(stateMutex);
 
-        Serial.printf("raw=%d moisture=%.1f%%\n", raw, webCtx.lastPercent);
+        Serial.printf("raw=%d moisture=%.1f%% stable=%d\n", raw, webCtx.lastPercent, webCtx.stable);
     }
 
     if (now - lastPersistMs >= PERSIST_INTERVAL_MS) {

@@ -15,6 +15,7 @@ void setup(AsyncWebServer &server, Context &ctx) {
         JsonDocument doc;
         doc["raw"] = ctx.lastRawReading;
         doc["moisture_pct"] = ctx.lastPercent;
+        doc["stable"] = ctx.stable;
         String out;
         serializeJson(doc, out);
         request->send(200, "application/json", out);
@@ -38,6 +39,20 @@ void setup(AsyncWebServer &server, Context &ctx) {
         "/api/calibrate",
         [&ctx](AsyncWebServerRequest *request, JsonVariant &json) {
             JsonObject body = json.as<JsonObject>();
+
+            xSemaphoreTake(ctx.mutex, portMAX_DELAY);
+            bool stableNow = ctx.stable;
+            xSemaphoreGive(ctx.mutex);
+
+            if (!stableNow) {
+                JsonDocument resp;
+                resp["ok"] = false;
+                resp["reason"] = "not_stable";
+                String out;
+                serializeJson(resp, out);
+                request->send(409, "application/json", out);
+                return;
+            }
 
             xSemaphoreTake(ctx.mutex, portMAX_DELAY);
             if (body["dry"].is<int>()) {

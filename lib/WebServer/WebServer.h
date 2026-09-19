@@ -13,6 +13,7 @@ struct Context {
     uint16_t intervalSeconds;
     int lastRawReading;
     float lastPercent;
+    bool stable;
     // Guards access to *history and *calibration, which are shared between
     // the Arduino loop() task and the AsyncTCP task that runs these route
     // handlers.
