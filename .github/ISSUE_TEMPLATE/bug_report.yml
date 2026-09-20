@@ -1,0 +1,35 @@
+name: Bug report
+description: Something doesn't work as expected
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: hardware
+    attributes:
+      label: Hardware
+      description: Board, sensor, and wiring (which sensor pin goes to which board pin).
+      placeholder: "Waveshare ESP32-C5-WIFI6-KIT; capacitive sensor; AOUT to GPIO4, VCC to 3V3, GND to GND"
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Firmware version
+      description: Commit hash (`git rev-parse --short HEAD`) or release.
+    validations:
+      required: true
+  - type: textarea
+    id: serial
+    attributes:
+      label: Serial output
+      description: "`python tools/capture_serial.py --reset --seconds 90` is ideal. Do not paste Wi-Fi passwords."
+      render: text
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: If readings look wrong, did `diag-pin-probe` report DRIVEN or FLOATING? See docs/hardware.md.
