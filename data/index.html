@@ -27,7 +27,7 @@
   </div>
 
   <div class="card">
-    <canvas id="chart" width="600" height="220"></canvas>
+    <canvas id="chart"></canvas>
   </div>
 
   <div class="card">
@@ -75,10 +75,21 @@ async function fetchHistory() {
   drawChart(points);
 }
 
+let lastPoints = [];
+
 function drawChart(points) {
+  lastPoints = points;
   const canvas = document.getElementById('chart');
   const ctx = canvas.getContext('2d');
-  const w = canvas.width, h = canvas.height;
+  // Size the bitmap to the size it's displayed at (in device pixels) so the
+  // browser never rescales it. A fixed-size bitmap stretched by CSS distorts
+  // the axis labels on wide screens and looks blurry on high-DPI ones.
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (!w || !h) return;
+  canvas.width = Math.round(w * dpr);
+  canvas.height = Math.round(h * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // draw in CSS pixels from here on
   ctx.clearRect(0, 0, w, h);
 
   if (points.length === 0) {
@@ -122,6 +133,7 @@ async function calibrate(point) {
   }
 }
 
+window.addEventListener('resize', () => drawChart(lastPoints));
 document.getElementById('setDry').addEventListener('click', () => calibrate('dry'));
 document.getElementById('setWet').addEventListener('click', () => calibrate('wet'));
 
