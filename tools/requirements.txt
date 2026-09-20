@@ -1,0 +1,5 @@
+# Host-side helper scripts in tools/ (not needed to build or flash the firmware).
+# PlatformIO's own Python environment already ships pyserial and esptool.
+pyserial>=3.5
+esptool>=4.7
+esp-idf-nvs-partition-gen>=0.1
