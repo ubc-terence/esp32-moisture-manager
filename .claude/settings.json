@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./include/config.local.h)",
+      "Bash(*erase_flash*)",
+      "Bash(*erase-flash*)",
+      "Bash(pio run * -t erase*)",
+      "Bash(pio run * --target erase*)",
+      "Bash(pio run -t erase*)",
+      "Bash(pio run --target erase*)"
+    ]
+  }
+}
