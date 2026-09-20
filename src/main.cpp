@@ -14,8 +14,13 @@
 
 namespace {
 // ESP32-C5-WIFI6-KIT (Waveshare), board = esp32-c5-devkitc-1 pinout.
-// GPIO4 (ADC1_CH3) and GPIO8 are both on this board's "safe" pin list:
-// no strapping-pin conflicts, not reserved for flash/PSRAM/USB-JTAG/UART0.
+// Sensor wiring as built: AOUT -> GPIO4 (ADC1_CH3), VCC -> 3V3 (always on),
+// GND -> GND. GPIO4 is on this board's "safe" pin list: no strapping-pin
+// conflict, not reserved for flash/PSRAM/USB-JTAG/UART0.
+// VCC_PIN (GPIO8) is currently NOT connected to the sensor: SensorReader
+// still drives it around each read, which is a harmless no-op with VCC on
+// 3V3. Moving the sensor's VCC wire to GPIO8 would power-cycle it per read,
+// which reduces electrode corrosion.
 constexpr uint8_t AOUT_PIN = 4;
 constexpr uint8_t VCC_PIN = 8;
 constexpr unsigned long READ_INTERVAL_MS = 10000;       // raw sensor read cadence
