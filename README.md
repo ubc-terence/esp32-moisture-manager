@@ -39,7 +39,8 @@ how to tell a working sensor from a floating pin, is in [docs/hardware.md](docs/
 You need [PlatformIO](https://platformio.org/install) (the VS Code extension or `pip install platformio`).
 
 ```sh
-git clone <this repo> && cd esp32-moisture-manager
+git clone https://github.com/ubc-terence/esp32-moisture-manager.git
+cd esp32-moisture-manager
 
 pio test -e native                          # unit tests, no board needed
 pio run                                     # build the firmware
