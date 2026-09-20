@@ -1,4 +1,20 @@
+# Build output and local IDE state
 .pio/
 .vscode/
-.superpowers/
 .DS_Store
+
+# Local build configuration (your own Wi-Fi name/password). Copy
+# include/config.local.example.h to include/config.local.h to use it.
+include/config.local.h
+
+# Personal Claude Code state. The shared project config in .claude/settings.json
+# and .claude/skills/ IS committed; your local overrides and private notes are not.
+.claude/settings.local.json
+.claude/worktrees/
+CLAUDE.local.md
+.superpowers/
+
+# Local artifacts from the helper tools
+.nvs-backups/
+# A copy of the board's history, staged only while redeploying the filesystem
+data/history.bin

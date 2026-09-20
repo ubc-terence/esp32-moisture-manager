@@ -4,6 +4,7 @@
 #include <ESPAsyncWebServer.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
+#include "config.h"
 #include "Calibration.h"
 #include "CalibrationStore.h"
 #include "HistoryBuffer.h"
@@ -27,8 +28,9 @@ constexpr unsigned long READ_INTERVAL_MS = 10000;       // raw sensor read caden
 constexpr unsigned long PERSIST_INTERVAL_MS = 600000;   // 10 minutes
 constexpr size_t HISTORY_CAPACITY = 8640;                // 60 days at 10-minute interval
 constexpr uint16_t HISTORY_INTERVAL_SECONDS = PERSIST_INTERVAL_MS / 1000;
-constexpr const char *AP_SSID = "PlantMonitor";
-constexpr const char *AP_PASSWORD = "plant1234"; // WPA2, >= 8 chars required by ESP-IDF
+// Defaults live in include/config.h; override locally via include/config.local.h.
+constexpr const char *AP_SSID = MM_AP_SSID;
+constexpr const char *AP_PASSWORD = MM_AP_PASSWORD;
 
 Calibration calibration;
 HistoryBuffer history(HISTORY_CAPACITY);
@@ -88,6 +90,8 @@ void setup() {
     WiFi.softAP(AP_SSID, AP_PASSWORD);
     WiFi.setSleep(false); // disable WiFi power-save, in case it's suppressing beacons
     WiFi.setTxPower(WIFI_POWER_19_5dBm); // max, for consistency with the C3 build
+    Serial.print("AP SSID: ");
+    Serial.println(AP_SSID);
     Serial.print("AP IP address: ");
     Serial.println(WiFi.softAPIP());
 
