@@ -4,6 +4,10 @@ Firmware for an **ESP32-C5** that reads a capacitive soil-moisture sensor, keeps
 about 60 days of history, and hosts its own Wi-Fi dashboard. No cloud, no router,
 no app: join the device's network and open a web page.
 
+This is the ESP32-C5 version. There is also an
+[ESP32-C3 version](https://github.com/ubc-terence/esp32-moisture-manager-c3); the two are
+separate projects that started from the same code.
+
 - **Reads every 10 s** using several ADC samples with the outliers trimmed.
 - **Dry/wet calibration** from the dashboard, stored on the device. It refuses to
   calibrate until the reading has settled, so you can't capture a value that's
